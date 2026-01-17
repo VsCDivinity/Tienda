@@ -1,0 +1,49 @@
+
+export enum Category {
+  Celulares = 'Celulares',
+  Accesorios = 'Accesorios',
+  Audio = 'Audio',
+  Computacion = 'Computación',
+  SmartHome = 'Smart Home'
+}
+
+export enum OrderStatus {
+  Pending = 'En cola',
+  Accepted = 'Aceptado',
+  Shipping = 'En camino',
+  Delivered = 'Entregado'
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  category: Category;
+  description: string;
+  stock: number;
+  available: boolean;
+}
+
+export interface CartItem {
+  product: Product;
+  quantity: number;
+}
+
+export interface Order {
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  phone: string;
+  address: string;
+  items: CartItem[];
+  status: OrderStatus;
+  total: number;
+  date: string;
+}
+
+export interface AppConfig {
+  qrCodeUrl: string;
+  whatsappNumber: string;
+  adminPassword: string;
+}
