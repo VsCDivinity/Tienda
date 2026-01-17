@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StoreService } from '../services/storeService';
 import { Product, Order, OrderStatus, Category, AppConfig } from '../types';
-import { GeminiService } from '../services/geminiService';
 
 export const AdminPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'categories' | 'config'>('orders');
@@ -13,7 +12,6 @@ export const AdminPanel: React.FC = () => {
   
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const [editingCategory, setEditingCategory] = useState<Partial<Category> | null>(null);
-  const [isAiLoading, setIsAiLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -51,7 +49,8 @@ export const AdminPanel: React.FC = () => {
         id: editingProduct.id || crypto.randomUUID(),
         available: editingProduct.available ?? true,
         stock: editingProduct.stock ?? 0,
-        image: editingProduct.image || 'https://picsum.photos/seed/default/600/400'
+        image: editingProduct.image || 'https://picsum.photos/seed/default/600/400',
+        description: editingProduct.description || ''
       });
       setEditingProduct(null);
       refreshData();
@@ -68,18 +67,6 @@ export const AdminPanel: React.FC = () => {
       setEditingCategory(null);
       refreshData();
     }
-  };
-
-  const generateAiDescription = async () => {
-    if (!editingProduct?.name || !editingProduct?.categoryId) {
-      alert("Por favor indica el nombre y categoría primero.");
-      return;
-    }
-    const catName = categories.find(c => c.id === editingProduct.categoryId)?.name || '';
-    setIsAiLoading(true);
-    const desc = await GeminiService.generateProductDescription(editingProduct.name, catName);
-    setEditingProduct({ ...editingProduct, description: desc });
-    setIsAiLoading(false);
   };
 
   return (
@@ -230,7 +217,7 @@ export const AdminPanel: React.FC = () => {
         <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white w-full max-w-lg rounded-3xl p-8 shadow-2xl my-8">
             <div className="flex justify-between items-center mb-6">
-               <h2 className="text-2xl font-bold">{editingProduct.id ? 'Editar' : 'Nuevo'} Producto</h2>
+               <h2 className="text-2xl font-bold">{editingProduct.id ? 'Editar Producto' : 'Nuevo Producto'}</h2>
                <button onClick={() => setEditingProduct(null)} className="text-slate-400 hover:text-slate-900"><i className="fa-solid fa-xmark text-xl"></i></button>
             </div>
             <form onSubmit={handleSaveProduct} className="space-y-5">
@@ -242,7 +229,7 @@ export const AdminPanel: React.FC = () => {
                    {editingProduct.image ? (
                      <>
                        <img src={editingProduct.image} className="w-full h-full object-cover" />
-                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition">Cambiar</div>
+                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition">Cambiar Imagen</div>
                      </>
                    ) : (
                      <>
@@ -256,12 +243,12 @@ export const AdminPanel: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="text-xs font-bold uppercase text-slate-400 ml-1">Nombre</label>
-                  <input type="text" required value={editingProduct.name || ''} onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} className="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-slate-900 outline-none" />
+                  <label className="text-xs font-bold uppercase text-slate-400 ml-1">Nombre del Producto</label>
+                  <input type="text" required placeholder="Ej: iPhone 15 Pro" value={editingProduct.name || ''} onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} className="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-slate-900 outline-none" />
                 </div>
                 <div>
                   <label className="text-xs font-bold uppercase text-slate-400 ml-1">Precio ($)</label>
-                  <input type="number" required value={editingProduct.price || ''} onChange={e => setEditingProduct({...editingProduct, price: parseFloat(e.target.value)})} className="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-slate-900 outline-none" />
+                  <input type="number" required placeholder="0.00" value={editingProduct.price || ''} onChange={e => setEditingProduct({...editingProduct, price: parseFloat(e.target.value)})} className="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-slate-900 outline-none" />
                 </div>
                 <div>
                   <label className="text-xs font-bold uppercase text-slate-400 ml-1">Categoría</label>
@@ -273,16 +260,20 @@ export const AdminPanel: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase text-slate-400 ml-1">Descripción</label>
-                <div className="relative">
-                  <textarea rows={3} value={editingProduct.description || ''} onChange={e => setEditingProduct({...editingProduct, description: e.target.value})} className="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-slate-900 outline-none resize-none" />
-                  <button type="button" onClick={generateAiDescription} disabled={isAiLoading} className="absolute bottom-2 right-2 text-[10px] bg-white shadow-sm border px-2 py-1 rounded-lg font-bold text-slate-600 hover:bg-slate-50">
-                    {isAiLoading ? <i className="fa-solid fa-spinner animate-spin"></i> : <><i className="fa-solid fa-wand-magic-sparkles mr-1"></i>IA</>}
-                  </button>
-                </div>
+                <label className="text-xs font-bold uppercase text-slate-400 ml-1">Descripción Detallada</label>
+                <textarea 
+                  rows={4} 
+                  placeholder="Escribe aquí las especificaciones y detalles del producto..."
+                  value={editingProduct.description || ''} 
+                  onChange={e => setEditingProduct({...editingProduct, description: e.target.value})} 
+                  className="w-full p-4 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-slate-900 outline-none resize-none text-sm text-slate-700 leading-relaxed" 
+                />
               </div>
 
-              <button type="submit" className="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl hover:bg-slate-800 transition">Guardar Producto</button>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setEditingProduct(null)} className="flex-1 bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-200 transition">Cancelar</button>
+                <button type="submit" className="flex-[2] bg-slate-900 text-white font-bold py-4 rounded-2xl hover:bg-slate-800 transition">Guardar Producto</button>
+              </div>
             </form>
           </div>
         </div>

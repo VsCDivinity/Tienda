@@ -1,0 +1,33 @@
+
+[
+  {
+    "id": "1",
+    "name": "iPhone 15 Pro Max",
+    "price": 1299,
+    "image": "assets/images/iphone-15.jpg",
+    "categoryId": "cat1",
+    "description": "El iPhone más potente hasta la fecha con chip A17 Pro y cámara de 48MP.",
+    "stock": 10,
+    "available": true
+  },
+  {
+    "id": "2",
+    "name": "Sony WH-1000XM5",
+    "price": 349,
+    "image": "assets/images/sony-xm5.jpg",
+    "categoryId": "cat3",
+    "description": "Audífonos con la mejor cancelación de ruido de la industria y sonido de alta fidelidad.",
+    "stock": 15,
+    "available": true
+  },
+  {
+    "id": "3",
+    "name": "MacBook Air M2",
+    "price": 1199,
+    "image": "assets/images/macbook-air.jpg",
+    "categoryId": "cat4",
+    "description": "Increíblemente delgada y rápida para que trabajes, juegues y crees lo que quieras en cualquier lugar.",
+    "stock": 5,
+    "available": true
+  }
+]
