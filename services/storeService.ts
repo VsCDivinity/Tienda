@@ -1,15 +1,44 @@
 
 import { Product, Order, AppConfig, OrderStatus, Category } from '../types';
-import { INITIAL_PRODUCTS, DEFAULT_CONFIG, INITIAL_CATEGORIES } from '../constants';
+import { DEFAULT_CONFIG } from '../constants';
 
 const DB_KEYS = {
   PRODUCTS: 'electrotech_products_v2',
   CATEGORIES: 'electrotech_categories_v2',
   ORDERS: 'electrotech_orders_v2',
-  CONFIG: 'electrotech_config_v2'
+  CONFIG: 'electrotech_config_v2',
+  INITIALIZED: 'electrotech_initialized'
 };
 
 export class StoreService {
+  private static initialized = false;
+
+  // Inicialización: Carga datos de los JSON si es la primera vez
+  static async init(): Promise<void> {
+    if (this.initialized) return;
+    
+    const isInitialized = localStorage.getItem(DB_KEYS.INITIALIZED);
+    
+    if (!isInitialized) {
+      try {
+        const [prodRes, catRes] = await Promise.all([
+          fetch('./data/products.json'),
+          fetch('./data/categories.json')
+        ]);
+        
+        const products = await prodRes.json();
+        const categories = await catRes.json();
+        
+        this.setStored(DB_KEYS.PRODUCTS, products);
+        this.setStored(DB_KEYS.CATEGORIES, categories);
+        localStorage.setItem(DB_KEYS.INITIALIZED, 'true');
+      } catch (error) {
+        console.error("Error cargando archivos JSON iniciales:", error);
+      }
+    }
+    this.initialized = true;
+  }
+
   private static getStored<T>(key: string, defaultValue: T): T {
     const data = localStorage.getItem(key);
     return data ? JSON.parse(data) : defaultValue;
@@ -21,7 +50,7 @@ export class StoreService {
 
   // Categories
   static getCategories(): Category[] {
-    return this.getStored<Category[]>(DB_KEYS.CATEGORIES, INITIAL_CATEGORIES);
+    return this.getStored<Category[]>(DB_KEYS.CATEGORIES, []);
   }
 
   static saveCategory(category: Category): void {
@@ -38,12 +67,11 @@ export class StoreService {
   static deleteCategory(id: string): void {
     const categories = this.getCategories().filter(c => c.id !== id);
     this.setStored(DB_KEYS.CATEGORIES, categories);
-    // Opcional: Manejar productos huérfanos si se elimina una categoría
   }
 
   // Products
   static getProducts(): Product[] {
-    return this.getStored<Product[]>(DB_KEYS.PRODUCTS, INITIAL_PRODUCTS);
+    return this.getStored<Product[]>(DB_KEYS.PRODUCTS, []);
   }
 
   static saveProduct(product: Product): void {

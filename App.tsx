@@ -13,9 +13,15 @@ const StoreHome: React.FC<{ addToCart: (p: Product) => void }> = ({ addToCart })
   const [activeCategoryId, setActiveCategoryId] = useState<string | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    refreshData();
+    const loadData = async () => {
+      await StoreService.init();
+      refreshData();
+      setLoading(false);
+    };
+    loadData();
   }, []);
 
   const refreshData = () => {
@@ -30,6 +36,14 @@ const StoreHome: React.FC<{ addToCart: (p: Product) => void }> = ({ addToCart })
       return matchesCategory && matchesSearch && p.available;
     });
   }, [products, activeCategoryId, searchQuery]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-slate-900"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -124,7 +138,7 @@ const StoreHome: React.FC<{ addToCart: (p: Product) => void }> = ({ addToCart })
               </span>
               <h2 className="text-3xl font-bold text-slate-900 mb-4">{selectedProduct.name}</h2>
               <div className="text-2xl font-bold text-slate-900 mb-6">${selectedProduct.price}</div>
-              <p className="text-slate-600 mb-10 leading-relaxed flex-1">{selectedProduct.description}</p>
+              <p className="text-slate-600 mb-10 leading-relaxed flex-1 whitespace-pre-wrap">{selectedProduct.description}</p>
               <button 
                 onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }}
                 className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold text-lg hover:bg-slate-800 transition"
