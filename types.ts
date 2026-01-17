@@ -1,10 +1,7 @@
 
-export enum Category {
-  Celulares = 'Celulares',
-  Accesorios = 'Accesorios',
-  Audio = 'Audio',
-  Computacion = 'Computación',
-  SmartHome = 'Smart Home'
+export interface Category {
+  id: string;
+  name: string;
 }
 
 export enum OrderStatus {
@@ -18,8 +15,8 @@ export interface Product {
   id: string;
   name: string;
   price: number;
-  image: string;
-  category: Category;
+  image: string; // Puede ser URL o Base64
+  categoryId: string; // Referencia al ID de la categoría
   description: string;
   stock: number;
   available: boolean;

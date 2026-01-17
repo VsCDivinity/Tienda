@@ -9,21 +9,27 @@ import { AdminPanel } from './components/AdminPanel';
 // --- Home Component ---
 const StoreHome: React.FC<{ addToCart: (p: Product) => void }> = ({ addToCart }) => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [activeCategory, setActiveCategory] = useState<Category | 'Todos'>('Todos');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [activeCategoryId, setActiveCategoryId] = useState<string | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   useEffect(() => {
-    setProducts(StoreService.getProducts());
+    refreshData();
   }, []);
+
+  const refreshData = () => {
+    setProducts(StoreService.getProducts());
+    setCategories(StoreService.getCategories());
+  };
 
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
-      const matchesCategory = activeCategory === 'Todos' || p.category === activeCategory;
+      const matchesCategory = activeCategoryId === 'all' || p.categoryId === activeCategoryId;
       const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch && p.available;
     });
-  }, [products, activeCategory, searchQuery]);
+  }, [products, activeCategoryId, searchQuery]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -31,18 +37,18 @@ const StoreHome: React.FC<{ addToCart: (p: Product) => void }> = ({ addToCart })
       <div className="flex flex-col md:flex-row gap-6 mb-12 items-center justify-between">
         <div className="flex gap-2 overflow-x-auto pb-2 w-full md:w-auto hide-scrollbar">
           <button 
-            onClick={() => setActiveCategory('Todos')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap ${activeCategory === 'Todos' ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+            onClick={() => setActiveCategoryId('all')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap ${activeCategoryId === 'all' ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
           >
             Todos
           </button>
-          {Object.values(Category).map(cat => (
+          {categories.map(cat => (
             <button 
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap ${activeCategory === cat ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+              key={cat.id}
+              onClick={() => setActiveCategoryId(cat.id)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap ${activeCategoryId === cat.id ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
             >
-              {cat}
+              {cat.name}
             </button>
           ))}
         </div>
@@ -76,7 +82,9 @@ const StoreHome: React.FC<{ addToCart: (p: Product) => void }> = ({ addToCart })
               </div>
             </div>
             <div className="p-6 flex-1 flex flex-col">
-              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">{product.category}</span>
+              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
+                {categories.find(c => c.id === product.categoryId)?.name || 'General'}
+              </span>
               <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors cursor-pointer" onClick={() => setSelectedProduct(product)}>
                 {product.name}
               </h3>
@@ -112,7 +120,7 @@ const StoreHome: React.FC<{ addToCart: (p: Product) => void }> = ({ addToCart })
             </div>
             <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col">
               <span className="inline-block bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-semibold mb-6 self-start">
-                {selectedProduct.category}
+                {categories.find(c => c.id === selectedProduct.categoryId)?.name || 'General'}
               </span>
               <h2 className="text-3xl font-bold text-slate-900 mb-4">{selectedProduct.name}</h2>
               <div className="text-2xl font-bold text-slate-900 mb-6">${selectedProduct.price}</div>
@@ -287,18 +295,20 @@ const AdminAuth: React.FC = () => {
   return (
     <div className="max-w-md mx-auto py-20 px-4">
       <div className="bg-white p-8 rounded-3xl shadow-lg text-center">
-        <i className="fa-solid fa-lock text-4xl text-slate-200 mb-6"></i>
-        <h2 className="text-2xl font-bold mb-6">Acceso Administrador</h2>
+        <div className="w-16 h-16 bg-slate-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <i className="fa-solid fa-lock text-2xl"></i>
+        </div>
+        <h2 className="text-2xl font-bold mb-6 text-slate-900">Panel Administrativo</h2>
         <form onSubmit={handleLogin} className="space-y-4">
           <input 
             type="password" 
             placeholder="Introduce la contraseña"
-            className="w-full px-4 py-3 rounded-2xl bg-slate-50 border-none shadow-inner focus:ring-2 focus:ring-slate-900 outline-none"
+            className="w-full px-5 py-4 rounded-2xl bg-slate-50 border-none shadow-inner focus:ring-2 focus:ring-slate-900 outline-none"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <button type="submit" className="w-full bg-slate-900 text-white font-bold py-3 rounded-2xl hover:bg-slate-800 transition">
-            Entrar al Panel
+          <button type="submit" className="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl hover:bg-slate-800 transition">
+            Autenticar
           </button>
         </form>
       </div>
@@ -312,7 +322,6 @@ const App: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [newOrderNotify, setNewOrderNotify] = useState(false);
 
-  // Sync cart count with favicon/title or notification
   useEffect(() => {
     const checkOrders = setInterval(() => {
        const orders = StoreService.getOrders();
@@ -366,7 +375,7 @@ const App: React.FC = () => {
             <div className="flex items-center gap-4">
               <Link to="/admin" className="hidden sm:flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition relative">
                 <i className="fa-solid fa-user-shield"></i>
-                Admin
+                Gestión
                 {newOrderNotify && <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>}
               </Link>
               <button 
@@ -394,12 +403,11 @@ const App: React.FC = () => {
 
         <footer className="bg-white border-t border-slate-100 py-12">
           <div className="max-w-7xl mx-auto px-4 text-center">
-            <div className="flex justify-center gap-8 mb-8 text-slate-400">
-              <i className="fa-brands fa-instagram text-2xl hover:text-slate-900 cursor-pointer"></i>
-              <i className="fa-brands fa-facebook text-2xl hover:text-slate-900 cursor-pointer"></i>
-              <i className="fa-brands fa-twitter text-2xl hover:text-slate-900 cursor-pointer"></i>
+            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-4">ElectroTech • Tienda Oficial</p>
+            <div className="flex justify-center gap-6 text-slate-400">
+               <i className="fa-brands fa-instagram text-xl"></i>
+               <i className="fa-brands fa-whatsapp text-xl"></i>
             </div>
-            <p className="text-slate-500 text-sm">© 2024 ElectroTech. Todos los derechos reservados.</p>
           </div>
         </footer>
 

@@ -1,11 +1,12 @@
 
-import { Product, Order, AppConfig, OrderStatus } from '../types';
-import { INITIAL_PRODUCTS, DEFAULT_CONFIG } from '../constants';
+import { Product, Order, AppConfig, OrderStatus, Category } from '../types';
+import { INITIAL_PRODUCTS, DEFAULT_CONFIG, INITIAL_CATEGORIES } from '../constants';
 
 const DB_KEYS = {
-  PRODUCTS: 'electrotech_products',
-  ORDERS: 'electrotech_orders',
-  CONFIG: 'electrotech_config'
+  PRODUCTS: 'electrotech_products_v2',
+  CATEGORIES: 'electrotech_categories_v2',
+  ORDERS: 'electrotech_orders_v2',
+  CONFIG: 'electrotech_config_v2'
 };
 
 export class StoreService {
@@ -16,6 +17,28 @@ export class StoreService {
 
   private static setStored<T>(key: string, data: T): void {
     localStorage.setItem(key, JSON.stringify(data));
+  }
+
+  // Categories
+  static getCategories(): Category[] {
+    return this.getStored<Category[]>(DB_KEYS.CATEGORIES, INITIAL_CATEGORIES);
+  }
+
+  static saveCategory(category: Category): void {
+    const categories = this.getCategories();
+    const index = categories.findIndex(c => c.id === category.id);
+    if (index >= 0) {
+      categories[index] = category;
+    } else {
+      categories.push(category);
+    }
+    this.setStored(DB_KEYS.CATEGORIES, categories);
+  }
+
+  static deleteCategory(id: string): void {
+    const categories = this.getCategories().filter(c => c.id !== id);
+    this.setStored(DB_KEYS.CATEGORIES, categories);
+    // Opcional: Manejar productos huérfanos si se elimina una categoría
   }
 
   // Products
