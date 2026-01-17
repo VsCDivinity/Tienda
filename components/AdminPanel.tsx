@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { StoreService } from '../services/storeService';
 import { Product, Order, OrderStatus, Category, AppConfig } from '../types';
@@ -13,6 +12,7 @@ export const AdminPanel: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const [editingCategory, setEditingCategory] = useState<Partial<Category> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const qrInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     refreshData();
@@ -36,6 +36,17 @@ export const AdminPanel: React.FC = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setEditingProduct(prev => prev ? { ...prev, image: reader.result as string } : null);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleQRUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setConfig(prev => ({ ...prev, qrCodeUrl: reader.result as string }));
       };
       reader.readAsDataURL(file);
     }
@@ -69,15 +80,22 @@ export const AdminPanel: React.FC = () => {
     }
   };
 
+  const handleSaveConfig = (e: React.FormEvent) => {
+    e.preventDefault();
+    StoreService.saveConfig(config);
+    alert('Configuración guardada correctamente');
+    refreshData();
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-4 lg:p-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 space-y-4 md:space-y-0">
         <h1 className="text-3xl font-bold text-slate-900">Panel de Control</h1>
         <div className="flex bg-white rounded-lg shadow p-1 overflow-x-auto hide-scrollbar">
-          {['orders', 'products', 'categories', 'config'].map((tab) => (
+          {(['orders', 'products', 'categories', 'config'] as const).map((tab) => (
             <button 
               key={tab}
-              onClick={() => setActiveTab(tab as any)}
+              onClick={() => setActiveTab(tab)}
               className={`px-4 py-2 rounded-md text-sm font-medium transition whitespace-nowrap ${activeTab === tab ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'}`}
             >
               {tab === 'orders' ? 'Pedidos' : tab === 'products' ? 'Productos' : tab === 'categories' ? 'Categorías' : 'Config'}
@@ -103,18 +121,23 @@ export const AdminPanel: React.FC = () => {
                 {orders.map((order) => (
                   <tr key={order.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{order.orderNumber}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-slate-900">{order.customerName}</div>
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">{order.customerName}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-semibold">${order.total.toFixed(2)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className="px-2 py-1 rounded-full bg-slate-100 text-xs">{order.status}</span>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
+                        order.status === OrderStatus.Pending ? 'bg-amber-100 text-amber-700' :
+                        order.status === OrderStatus.Accepted ? 'bg-blue-100 text-blue-700' :
+                        order.status === OrderStatus.Shipping ? 'bg-indigo-100 text-indigo-700' :
+                        'bg-green-100 text-green-700'
+                      }`}>
+                        {order.status}
+                      </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
                       <select 
                         value={order.status}
                         onChange={(e) => handleUpdateStatus(order.id, e.target.value as OrderStatus)}
-                        className="bg-white border rounded p-1 text-xs"
+                        className="bg-white border-slate-200 border rounded-lg p-1 text-xs focus:ring-slate-900 outline-none"
                       >
                         {Object.values(OrderStatus).map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
@@ -175,18 +198,52 @@ export const AdminPanel: React.FC = () => {
       )}
 
       {activeTab === 'config' && (
-        <div className="bg-white max-w-xl p-6 rounded-2xl border border-slate-100 shadow-sm mx-auto">
-          <h2 className="text-lg font-bold mb-6">Ajustes de la Tienda</h2>
-          <form onSubmit={(e) => { e.preventDefault(); StoreService.saveConfig(config); alert('Guardado'); }} className="space-y-4">
+        <div className="bg-white max-w-xl p-8 rounded-3xl border border-slate-100 shadow-sm mx-auto">
+          <h2 className="text-2xl font-bold mb-8 text-center">Ajustes de la Tienda</h2>
+          <form onSubmit={handleSaveConfig} className="space-y-6">
             <div>
-              <label className="block text-xs font-bold uppercase text-slate-400 mb-1">WhatsApp de Ventas</label>
-              <input type="text" value={config.whatsappNumber} onChange={(e) => setConfig({...config, whatsappNumber: e.target.value})} className="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-slate-900 outline-none" />
+              <label className="block text-xs font-bold uppercase text-slate-400 mb-2 ml-1">WhatsApp de Ventas</label>
+              <input 
+                type="text" 
+                placeholder="Ej: 5491122334455"
+                value={config.whatsappNumber} 
+                onChange={(e) => setConfig({...config, whatsappNumber: e.target.value})} 
+                className="w-full p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-slate-900 outline-none" 
+              />
             </div>
+            
             <div>
-              <label className="block text-xs font-bold uppercase text-slate-400 mb-1">URL QR de Pago</label>
-              <input type="text" value={config.qrCodeUrl} onChange={(e) => setConfig({...config, qrCodeUrl: e.target.value})} className="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-slate-900 outline-none" />
+              <label className="block text-xs font-bold uppercase text-slate-400 mb-3 ml-1">Imagen de Código QR para Pago</label>
+              <div 
+                onClick={() => qrInputRef.current?.click()}
+                className="w-full aspect-square max-w-[240px] mx-auto rounded-3xl bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 transition overflow-hidden group relative"
+              >
+                {config.qrCodeUrl ? (
+                  <>
+                    <img src={config.qrCodeUrl} className="w-full h-full object-contain p-4" alt="QR Preview" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition">
+                      Cambiar Imagen de QR
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-qrcode text-slate-300 text-4xl mb-3"></i>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Subir Imagen de QR</span>
+                  </>
+                )}
+              </div>
+              <input 
+                type="file" 
+                ref={qrInputRef} 
+                onChange={handleQRUpload} 
+                accept="image/*" 
+                className="hidden" 
+              />
             </div>
-            <button type="submit" className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition">Guardar Cambios</button>
+
+            <button type="submit" className="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl hover:bg-slate-800 transition shadow-lg">
+              Guardar Configuración
+            </button>
           </form>
         </div>
       )}
@@ -229,12 +286,12 @@ export const AdminPanel: React.FC = () => {
                    {editingProduct.image ? (
                      <>
                        <img src={editingProduct.image} className="w-full h-full object-cover" />
-                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition">Cambiar Imagen</div>
+                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition">Cambiar</div>
                      </>
                    ) : (
                      <>
                        <i className="fa-solid fa-camera text-slate-300 text-2xl mb-2"></i>
-                       <span className="text-[10px] font-bold text-slate-400 uppercase">Subir Imagen</span>
+                       <span className="text-[10px] font-bold text-slate-400 uppercase">Subir</span>
                      </>
                    )}
                  </div>
@@ -243,8 +300,8 @@ export const AdminPanel: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="text-xs font-bold uppercase text-slate-400 ml-1">Nombre del Producto</label>
-                  <input type="text" required placeholder="Ej: iPhone 15 Pro" value={editingProduct.name || ''} onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} className="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-slate-900 outline-none" />
+                  <label className="text-xs font-bold uppercase text-slate-400 ml-1">Nombre</label>
+                  <input type="text" required placeholder="Nombre del producto" value={editingProduct.name || ''} onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} className="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-slate-900 outline-none" />
                 </div>
                 <div>
                   <label className="text-xs font-bold uppercase text-slate-400 ml-1">Precio ($)</label>
@@ -260,19 +317,19 @@ export const AdminPanel: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase text-slate-400 ml-1">Descripción Detallada</label>
+                <label className="text-xs font-bold uppercase text-slate-400 ml-1">Descripción</label>
                 <textarea 
                   rows={4} 
-                  placeholder="Escribe aquí las especificaciones y detalles del producto..."
+                  placeholder="Detalles del producto..."
                   value={editingProduct.description || ''} 
                   onChange={e => setEditingProduct({...editingProduct, description: e.target.value})} 
-                  className="w-full p-4 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-slate-900 outline-none resize-none text-sm text-slate-700 leading-relaxed" 
+                  className="w-full p-4 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-slate-900 outline-none resize-none text-sm" 
                 />
               </div>
 
-              <div className="flex gap-3">
-                <button type="button" onClick={() => setEditingProduct(null)} className="flex-1 bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-200 transition">Cancelar</button>
-                <button type="submit" className="flex-[2] bg-slate-900 text-white font-bold py-4 rounded-2xl hover:bg-slate-800 transition">Guardar Producto</button>
+              <div className="flex gap-3 pt-4">
+                <button type="button" onClick={() => setEditingProduct(null)} className="flex-1 bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl">Cancelar</button>
+                <button type="submit" className="flex-[2] bg-slate-900 text-white font-bold py-4 rounded-2xl">Guardar</button>
               </div>
             </form>
           </div>
