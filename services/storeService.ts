@@ -1,4 +1,3 @@
-
 import { Product, Order, AppConfig, OrderStatus, Category } from '../types';
 import { DEFAULT_CONFIG } from '../constants';
 
@@ -13,7 +12,6 @@ const DB_KEYS = {
 export class StoreService {
   private static initialized = false;
 
-  // Inicialización: Carga datos de los JSON si es la primera vez
   static async init(): Promise<void> {
     if (this.initialized) return;
     
@@ -21,19 +19,39 @@ export class StoreService {
     
     if (!isInitialized) {
       try {
-        const [prodRes, catRes] = await Promise.all([
-          fetch('./data/products.json'),
-          fetch('./data/categories.json')
-        ]);
-        
-        const products = await prodRes.json();
-        const categories = await catRes.json();
+        const products = [
+          {
+            "id": "1",
+            "name": "iPhone 15 Pro Max",
+            "price": 1299,
+            "image": "https://picsum.photos/seed/iphone15/600/400",
+            "categoryId": "cat1",
+            "description": "El iPhone más potente hasta la fecha con chip A17 Pro y cámara de 48MP.",
+            "stock": 10,
+            "available": true
+          },
+          {
+            "id": "2",
+            "name": "Sony WH-1000XM5",
+            "price": 349,
+            "image": "https://picsum.photos/seed/sony-xm5/600/400",
+            "categoryId": "cat3",
+            "description": "Audífonos con la mejor cancelación de ruido de la industria y sonido de alta fidelidad.",
+            "stock": 15,
+            "available": true
+          }
+        ];
+        const categories = [
+          { "id": "cat1", "name": "Celulares" },
+          { "id": "cat2", "name": "Accesorios" },
+          { "id": "cat3", "name": "Audio" }
+        ];
         
         this.setStored(DB_KEYS.PRODUCTS, products);
         this.setStored(DB_KEYS.CATEGORIES, categories);
         localStorage.setItem(DB_KEYS.INITIALIZED, 'true');
       } catch (error) {
-        console.error("Error cargando archivos JSON iniciales:", error);
+        console.error("Error cargando datos iniciales:", error);
       }
     }
     this.initialized = true;
@@ -48,7 +66,6 @@ export class StoreService {
     localStorage.setItem(key, JSON.stringify(data));
   }
 
-  // Categories
   static getCategories(): Category[] {
     return this.getStored<Category[]>(DB_KEYS.CATEGORIES, []);
   }
@@ -56,11 +73,8 @@ export class StoreService {
   static saveCategory(category: Category): void {
     const categories = this.getCategories();
     const index = categories.findIndex(c => c.id === category.id);
-    if (index >= 0) {
-      categories[index] = category;
-    } else {
-      categories.push(category);
-    }
+    if (index >= 0) categories[index] = category;
+    else categories.push(category);
     this.setStored(DB_KEYS.CATEGORIES, categories);
   }
 
@@ -69,7 +83,6 @@ export class StoreService {
     this.setStored(DB_KEYS.CATEGORIES, categories);
   }
 
-  // Products
   static getProducts(): Product[] {
     return this.getStored<Product[]>(DB_KEYS.PRODUCTS, []);
   }
@@ -77,11 +90,8 @@ export class StoreService {
   static saveProduct(product: Product): void {
     const products = this.getProducts();
     const index = products.findIndex(p => p.id === product.id);
-    if (index >= 0) {
-      products[index] = product;
-    } else {
-      products.push(product);
-    }
+    if (index >= 0) products[index] = product;
+    else products.push(product);
     this.setStored(DB_KEYS.PRODUCTS, products);
   }
 
@@ -90,9 +100,12 @@ export class StoreService {
     this.setStored(DB_KEYS.PRODUCTS, products);
   }
 
-  // Orders
   static getOrders(): Order[] {
     return this.getStored<Order[]>(DB_KEYS.ORDERS, []);
+  }
+
+  static getOrderById(id: string): Order | undefined {
+    return this.getOrders().find(o => o.id === id);
   }
 
   static createOrder(order: Omit<Order, 'orderNumber' | 'id' | 'date' | 'status'>): Order {
@@ -121,7 +134,6 @@ export class StoreService {
     }
   }
 
-  // Config
   static getConfig(): AppConfig {
     return this.getStored<AppConfig>(DB_KEYS.CONFIG, DEFAULT_CONFIG);
   }

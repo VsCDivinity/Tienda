@@ -1,7 +1,5 @@
 
 import { Product, Category, AppConfig } from './types';
-// Nota: En un entorno de desarrollo real, importaríamos los JSON directamente.
-// Para asegurar compatibilidad inmediata, definimos las constantes basadas en los archivos JSON creados.
 
 export const INITIAL_CATEGORIES: Category[] = [
   { "id": "cat1", "name": "Celulares" },
@@ -45,7 +43,7 @@ export const INITIAL_PRODUCTS: Product[] = [
 ];
 
 export const DEFAULT_CONFIG: AppConfig = {
-  qrCodeUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=PagoElectroTech',
-  whatsappNumber: '5491122334455',
+  qrCodeUrl: 'http://localhost:3000/assets/qr.png',
+  whatsappNumber: '+59175307751',
   adminPassword: 'admin'
 };
